@@ -1,36 +1,56 @@
 // frontend/app.js
 const API_KEY = "REPLACE_ME";  // overwritten on deploy
 
+const N = 28;       // the model's input grid
+const SCALE = 10;   // on-screen pixels per grid cell (280 / 28)
+
 const pad = document.getElementById("pad");
-const ctx = pad.getContext("2d");
+const view = pad.getContext("2d");
+view.imageSmoothingEnabled = false;  // draw crisp blocks
+
+// The real drawing happens on a hidden 28x28 grid. The
+// visible canvas is that grid magnified ten times, so
+// the user paints at the model's own resolution.
+const grid = document.createElement("canvas");
+grid.width = N; grid.height = N;
+const gctx = grid.getContext("2d");
+gctx.lineWidth = 2.5;
+gctx.lineCap = "round"; gctx.lineJoin = "round";
+
 let drawing = false;
 
-ctx.fillStyle = "#fff";
-ctx.fillRect(0, 0, pad.width, pad.height);
-ctx.lineWidth = 18; ctx.lineCap = "round";
+function render() {
+    // Magnify the grid onto the canvas, smoothing off.
+    view.drawImage(grid, 0, 0, pad.width, pad.height);
+}
 
+function clearPad() {
+    gctx.fillStyle = "#fff";
+    gctx.fillRect(0, 0, N, N);
+    render();
+}
+clearPad();
+
+// Mouse positions map onto the 28x28 grid via SCALE.
 pad.onmousedown = e => {
-    drawing = true; ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
+    drawing = true; gctx.beginPath();
+    gctx.moveTo(e.offsetX / SCALE, e.offsetY / SCALE);
 };
 pad.onmousemove = e => {
     if (!drawing) return;
-    ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke();
+    gctx.lineTo(e.offsetX / SCALE, e.offsetY / SCALE);
+    gctx.stroke(); render();
 };
 pad.onmouseup = pad.onmouseleave = () => { drawing = false; };
 
 function getPixels() {
-    // Downsample 280x280 -> 28x28, invert so ink is high.
-    const tmp = document.createElement("canvas");
-    tmp.width = 28; tmp.height = 28;
-    tmp.getContext("2d").drawImage(pad, 0, 0, 28, 28);
-    const data = tmp.getContext("2d")
-        .getImageData(0, 0, 28, 28).data;
+    // The grid is already 28x28: read it and invert.
+    const data = gctx.getImageData(0, 0, N, N).data;
     const pixels = [];
-    for (let y = 0; y < 28; y++) {
+    for (let y = 0; y < N; y++) {
         const row = [];
-        for (let x = 0; x < 28; x++)
-            row.push(255 - data[(y * 28 + x) * 4]);
+        for (let x = 0; x < N; x++)
+            row.push(255 - data[(y * N + x) * 4]);
         pixels.push(row);
     }
     return pixels;
@@ -68,8 +88,7 @@ async function refresh() {
 
 document.getElementById("classify").onclick = classify;
 document.getElementById("clear").onclick = () => {
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, pad.width, pad.height);
+    clearPad();
     document.getElementById("result").textContent = "";
 };
 refresh();
