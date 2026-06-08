@@ -1,2 +1,18 @@
-*.py
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets
+.env
+
+# Data and models
+*.csv
+*.pkl
+
+# Editor files
+.vscode/
+
+# Virtual environment
+.venv/
 
