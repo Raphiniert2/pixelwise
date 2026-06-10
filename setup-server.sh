@@ -3,7 +3,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 set -euo pipefail
 
 sudo apt update
-sudo apt install -y git python3 python3-pip \
+sudo apt install -y git nginx python3 python3-pip \
 python3-venv curl postgresql
 #Pull the pinned model artefact
 if [ -f .env ]; then
@@ -44,4 +44,17 @@ if command -v psql >/dev/null 2>&1 && \
         "SELECT 1 FROM pg_database WHERE datname='pixelwise'" \
         | grep -q 1 || \
     sudo -u postgres createdb -O pixelwise pixelwise
+fi
+# Install Nginx site and deploy the frontend on prod
+if [ -f deploy/pixelwise.nginx ] && \
+   command -v nginx >/dev/null 2>&1 && \
+   id raphiniertserver >/dev/null 2>&1; then
+    sudo mkdir -p /var/www/pixelwise
+    sudo cp -r frontend/* /var/www/pixelwise/
+    KEY=$(grep ^SECRET_API_KEY /opt/pixelwise/.env | cut -d= -f2)
+    sudo sed -i "s/REPLACE_ME/$KEY/" /var/www/pixelwise/app.js
+    sudo cp deploy/pixelwise.nginx /etc/nginx/sites-available/pixelwise
+    sudo ln -sf /etc/nginx/sites-available/pixelwise /etc/nginx/sites-enabled/pixelwise
+    sudo rm -f /etc/nginx/sites-enabled/default
+    sudo nginx -t && sudo systemctl reload nginx
 fi
