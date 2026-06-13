@@ -58,3 +58,15 @@ if [ -f deploy/pixelwise.nginx ] && \
     sudo rm -f /etc/nginx/sites-enabled/default
     sudo nginx -t && sudo systemctl reload nginx
 fi
+
+# Install the auto-deploy systemd timer on prod
+if [ -f "$SCRIPT_DIR/deploy/systemd/pixelwise-deploy.timer" ] \
+   && command -v systemctl >/dev/null 2>&1 \
+   && id raphiniertserver >/dev/null 2>&1; then
+    sudo cp "$SCRIPT_DIR/deploy/systemd/pixelwise-deploy.service" \
+        /etc/systemd/system/pixelwise-deploy.service
+    sudo cp "$SCRIPT_DIR/deploy/systemd/pixelwise-deploy.timer" \
+        /etc/systemd/system/pixelwise-deploy.timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now pixelwise-deploy.timer
+fi
