@@ -15,7 +15,7 @@ class Prediction(Base):
     confidence = Column(Float, nullable=False)
     model_version = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    label = Column(String, nullable= True)
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DATABASE_URL = (
     "postgresql://pixelwise:"
