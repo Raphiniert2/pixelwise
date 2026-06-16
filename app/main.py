@@ -23,6 +23,9 @@ class ClassifyResponse(BaseModel):
     confidence: float
     scores: dict[str, float]
 
+class FeedbackResponse(BaseModel):
+    label: str
+
 app = FastAPI()
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
@@ -60,3 +63,15 @@ def classify(request: Request, req: ClassifyRequest):
     db.commit()
     db.close()
     return result
+
+@app.patch("/feedback/{prediction_id}")
+def feedback(prediction_id: int, req: FeedbackRequest):
+    db = SessionLocal()
+    pred = db.query(Prediction).filter(Prediction.id == prediction_id).first()
+    if not pred:
+        db.close()
+        raise  HTTPException(status_code=404, detail="Prediction not found")
+    pred.label = req.label
+    db.commit()
+    db.close()
+    return {"id": prediction_id, "label": req.label}
