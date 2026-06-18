@@ -22,8 +22,8 @@ class ClassifyResponse(BaseModel):
     prediction: str
     confidence: float
     scores: dict[str, float]
-
-class FeedbackResponse(BaseModel):
+    id: int
+class FeedbackRequest(BaseModel):
     label: str
 
 app = FastAPI()
@@ -56,13 +56,16 @@ def classify(request: Request, req: ClassifyRequest):
     arr = np.array(req.pixels, dtype=np.uint8)[np.newaxis]
     result = classify_batch(arr)[0]
     db = SessionLocal()
-    db.add(Prediction(
+    pred = Prediction(
         prediction=result["prediction"],
         confidence=result["confidence"],
-        model_version="v1"))
+        model_version="v1")
+    db.add(pred)
     db.commit()
+    db.refresh(pred)
+    pred_id = pred.id
     db.close()
-    return result
+    return {**result, "id": pred_id}
 
 @app.patch("/feedback/{prediction_id}")
 def feedback(prediction_id: int, req: FeedbackRequest):
