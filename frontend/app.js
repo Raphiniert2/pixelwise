@@ -48,6 +48,9 @@ function getPixels() {
     return pixels;
 }
 
+let currentPredictionId = null;
+let currentPrediction = null;
+
 async function classify() {
     const r = await fetch("/api/classify", {
         method: "POST",
@@ -62,8 +65,34 @@ async function classify() {
     const d = await r.json();
     out.textContent = `Prediction: ${d.prediction} ` +
         `(${(d.confidence * 100).toFixed(1)}%)`;
+    currentPredictionId = d.id;
+    currentPrediction = d.prediction;
+    document.getElementById("feedback").style.display = "block";
+    document.getElementById("correction-box").style.display = "none";
     refresh();
 }
+
+async function sendFeedback(label) {
+    await fetch(`/api/feedback/${currentPredictionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: label })
+    });
+    document.getElementById("feedback").style.display = "none";
+}
+
+document.getElementById("confirm").onclick = () => {
+    sendFeedback(currentPrediction);
+};
+
+document.getElementById("wrong").onclick = () => {
+    document.getElementById("correction-box").style.display = "inline";
+};
+
+document.getElementById("submit-correction").onclick = () => {
+    const val = document.getElementById("correction-input").value;
+    if (val) sendFeedback(val);
+};
 
 async function refresh() {
     const r = await fetch("/api/results");

@@ -15,6 +15,14 @@
         <button id="clear">Clear</button>
     </div>
     <div id="result"></div>
+    <div id="feedback" style="display:none;">
+        <button id="confirm">✓ Richtig</button>
+        <button id="wrong">✗ Falsch</button>
+        <span id="correction-box" style="display:none;">
+            <input id="correction-input" type="text" maxlength="1" placeholder="echte Ziffer">
+            <button id="submit-correction">Senden</button>
+        </span>
+    </div>
     <h2>Recent predictions</h2>
     <ul id="history"></ul>
     <script src="app.js"></script>
